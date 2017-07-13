@@ -4,6 +4,7 @@ import com.bettercloud.vault.api.Auth;
 import com.bettercloud.vault.api.Debug;
 import com.bettercloud.vault.api.Leases;
 import com.bettercloud.vault.api.Logical;
+import com.bettercloud.vault.api.Sys;
 import com.bettercloud.vault.api.pki.Pki;
 
 /**
@@ -135,5 +136,14 @@ public class Vault {
      */
     public Debug debug() {
         return new Debug(vaultConfig);
+    }
+
+    /**
+     * Returns the implementing class or Vault's system operations (e.g. policy).
+     *
+     * @return The implementing class for Vault's system operations (e.g. policy)
+     */
+    public Sys sys() {
+        return new Sys(vaultConfig);
     }
 }
