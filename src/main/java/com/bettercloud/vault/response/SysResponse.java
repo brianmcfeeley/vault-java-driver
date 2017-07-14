@@ -2,6 +2,7 @@ package com.bettercloud.vault.response;
 
 import com.bettercloud.vault.json.Json;
 import com.bettercloud.vault.json.JsonObject;
+import com.bettercloud.vault.json.JsonValue;
 import com.bettercloud.vault.json.ParseException;
 import com.bettercloud.vault.rest.RestResponse;
 
@@ -22,7 +23,7 @@ public class SysResponse extends LogicalResponse {
         try {
             final String responseJson = new String(restResponse.getBody(), "UTF-8");
             final JsonObject jsonObject = Json.parse(responseJson).asObject();
-            rules = jsonObject.get("rules").asObject();
+            rules = getRules(jsonObject);
             name = jsonObject.getString("name", "");
 
         } catch (UnsupportedEncodingException | ParseException e) {
@@ -32,4 +33,9 @@ public class SysResponse extends LogicalResponse {
     public JsonObject getRules() { return rules; }
 
     public String getName() { return name; }
+
+    private JsonObject getRules(JsonObject response) {
+        JsonValue rulesValue = response.get("rules");
+        return rulesValue.isObject() ? rulesValue.asObject() : new JsonObject();
+    }
 }

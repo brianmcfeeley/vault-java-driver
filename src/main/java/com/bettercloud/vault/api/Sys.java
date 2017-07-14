@@ -34,7 +34,7 @@ public class Sys {
      *   policy = "read"
      *   capabilities = ["create", "sudo"]
      * }
-     * </pre>
+     * }</pre>
      * </blockquote>
      *
      * @param policyName The Vault policy name from which to read (e.g. <code>root, foo-policy</code>)
@@ -46,7 +46,7 @@ public class Sys {
         while (true) {
             try {
                 final RestResponse restResponse = new Rest()//NOPMD
-                        .url(config.getAddress() + "/v1/sys/policy" + policyName)
+                        .url(config.getAddress() + "/v1/sys/policy/" + policyName)
                         .header("X-Vault-Token", config.getToken())
                         .connectTimeoutSeconds(config.getOpenTimeout())
                         .readTimeoutSeconds(config.getReadTimeout())
