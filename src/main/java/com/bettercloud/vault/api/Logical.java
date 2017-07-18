@@ -21,14 +21,15 @@ import com.bettercloud.vault.rest.RestResponse;
  * <p>This class is not intended to be constructed directly.  Rather, it is meant to used by way of <code>Vault</code>
  * in a DSL-style builder pattern.  See the Javadoc comments of each <code>public</code> method for usage examples.</p>
  */
-public class Logical {
-
-    private final VaultConfig config;
+public class Logical extends Endpoint<LogicalResponse> {
 
     public Logical(final VaultConfig config) {
-        this.config = config;
+        super(config);
     }
 
+    public LogicalResponse response(RestResponse restResponse, int retryCount) {
+        return new LogicalResponse(restResponse, retryCount);
+    }
     /**
      * <p>Basic read operation to retrieve a secret.  A single secret key can map to multiple name-value pairs,
      * which can be retrieved from the response object.  E.g.:</p>
@@ -47,44 +48,7 @@ public class Logical {
      * @throws VaultException If any errors occurs with the REST request (e.g. non-200 status code, invalid JSON payload, etc), and the maximum number of retries is exceeded.
      */
     public LogicalResponse read(final String path) throws VaultException {
-        int retryCount = 0;
-        while (true) {
-            try {
-                // Make an HTTP request to Vault
-                final RestResponse restResponse = new Rest()//NOPMD
-                        .url(config.getAddress() + "/v1/" + path)
-                        .header("X-Vault-Token", config.getToken())
-                        .connectTimeoutSeconds(config.getOpenTimeout())
-                        .readTimeoutSeconds(config.getReadTimeout())
-                        .sslVerification(config.getSslConfig().isVerify())
-                        .sslContext(config.getSslConfig().getSslContext())
-                        .get();
-
-                // Validate response
-                if (restResponse.getStatus() != 200) {
-                    throw new VaultException("Vault responded with HTTP status code: " + restResponse.getStatus()
-                            + "\nResponse body: " + new String(restResponse.getBody(), "UTF-8"), restResponse.getStatus());
-                }
-
-                return new LogicalResponse(restResponse, retryCount);
-            } catch (RuntimeException | VaultException | RestException | UnsupportedEncodingException e) {
-                // If there are retries to perform, then pause for the configured interval and then execute the loop again...
-                if (retryCount < config.getMaxRetries()) {
-                    retryCount++;
-                    try {
-                        final int retryIntervalMilliseconds = config.getRetryIntervalMilliseconds();
-                        Thread.sleep(retryIntervalMilliseconds);
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-                } else if (e instanceof VaultException) {
-                    // ... otherwise, give up.
-                    throw (VaultException) e;
-                } else {
-                    throw new VaultException(e);
-                }
-            }
-        }
+        return getWithRetry("/v1/" + path);
     }
 
     /**

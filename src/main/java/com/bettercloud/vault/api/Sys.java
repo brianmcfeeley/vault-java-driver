@@ -4,11 +4,7 @@ import com.bettercloud.vault.Vault;
 import com.bettercloud.vault.VaultConfig;
 import com.bettercloud.vault.VaultException;
 import com.bettercloud.vault.response.SysResponse;
-import com.bettercloud.vault.rest.Rest;
-import com.bettercloud.vault.rest.RestException;
 import com.bettercloud.vault.rest.RestResponse;
-
-import java.io.UnsupportedEncodingException;
 
 /**
  * <p>The implementing class for operations on Vault's <code>/v1/sys/*</code> REST endpoints.</p>
@@ -18,11 +14,15 @@ import java.io.UnsupportedEncodingException;
  *
  * @see Vault#sys()
  */
-public class Sys {
-    private final VaultConfig config;
+public class Sys extends Endpoint<SysResponse> {
 
     public Sys(final VaultConfig config) {
-        this.config = config;
+        super(config);
+    }
+
+    @Override
+    public SysResponse response(RestResponse restResponse, int retryCount) {
+        return new SysResponse(restResponse, retryCount);
     }
 
     /**
@@ -42,42 +42,6 @@ public class Sys {
      * @throws VaultException If any errors occurs with the REST request (e.g. non-200 status code, invalid JSON payload, etc), and the maximum number of retries is exceeded.
      */
     public SysResponse policy(final String policyName) throws VaultException {
-        int retryCount = 0;
-        while (true) {
-            try {
-                final RestResponse restResponse = new Rest()//NOPMD
-                        .url(config.getAddress() + "/v1/sys/policy/" + policyName)
-                        .header("X-Vault-Token", config.getToken())
-                        .connectTimeoutSeconds(config.getOpenTimeout())
-                        .readTimeoutSeconds(config.getReadTimeout())
-                        .sslVerification(config.getSslConfig().isVerify())
-                        .sslContext(config.getSslConfig().getSslContext())
-                        .get();
-
-                // Validate response
-                if (restResponse.getStatus() != 200) {
-                    throw new VaultException("Vault responded with HTTP status code: " + restResponse.getStatus()
-                            + "\nResponse body: " + new String(restResponse.getBody(), "UTF-8"), restResponse.getStatus());
-                }
-
-                return new SysResponse(restResponse, retryCount);
-            } catch (RuntimeException | VaultException | RestException | UnsupportedEncodingException e) {
-                // If there are retries to perform, then pause for the configured interval and then execute the loop again...
-                if (retryCount < config.getMaxRetries()) {
-                    retryCount++;
-                    try {
-                        final int retryIntervalMilliseconds = config.getRetryIntervalMilliseconds();
-                        Thread.sleep(retryIntervalMilliseconds);
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-                } else if (e instanceof VaultException) {
-                    // ... otherwise, give up.
-                    throw (VaultException) e;
-                } else {
-                    throw new VaultException(e);
-                }
-            }
-        }
+        return getWithRetry("/v1/sys/policy/" + policyName);
     }
 }
